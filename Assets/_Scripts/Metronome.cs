@@ -1,92 +1,73 @@
 ﻿using UnityEngine;
 
-// adapted from Unity documentation sample (Nov 2017) found at:
+// adapted to use AudioSources with clips
+// from Unity documentation sample (Nov 2017) found at:
 // https://docs.unity3d.com/ScriptReference/AudioSettings-dspTime.html
-
-[RequireComponent(typeof(AudioSource))]
 public class Metronome : MonoBehaviour
 {
-// The code example shows how to implement a metronome that procedurally generates the click sounds via the OnAudioFilterRead callback.
-// While the game is paused or the suspended, this time will not be updated and sounds playing will be paused. Therefore developers of music scheduling routines do not have to do any rescheduling after the app is unpaused
+    public AudioSource audioSourceTickBasic;
+    public AudioSource audioSourceTickAccent;
 
     public double bpm = 140.0F;
-    public float gain = 0.5F;
     public int signatureHi = 4;
     public int signatureLo = 4;
-    private double nextTickTime = 0.0F;
-    private float amp = 0.0F;
-    private float phase = 0.0F;
-    private double sampleRate = 0.0F;
-    private int beatCount;
-    private bool running = false;
 
+    private double nextTickTime = 0.0F;
+    private int beatCount;
+    private double beatDuration;
+
+    /// <summary>
+    /// calc duration of each beat (based on 'bpm')
+    /// initialise the beat count (so first beat is an accented beat)
+    /// set time to next tick is NOW!
+    /// </summary>
     void Start()
     {
-        beatCount = signatureHi;
+        // 1 minute = 60 seconds / (numebr of beats per minute)
+        beatDuration = 60.0F / bpm;
+
+        beatCount = signatureHi; // so about to do a beat
+
         double startTick = AudioSettings.dspTime;
-        sampleRate = AudioSettings.outputSampleRate;
-        nextTickTime = startTick * sampleRate;
-        running = true;
+        nextTickTime = startTick;
     }
 
-    void OnAudioFilterRead(float[] data, int channels)
+    /// <summary>
+    /// if close to time for next tick invoke BeatAction()
+    /// </summary>
+    void Update()
     {
-        if (!running)
-            return;
-
-        double samplesPerTick = sampleRate * 60.0F / bpm * 4.0F / signatureLo;
-        double sample = AudioSettings.dspTime * sampleRate;
-        int samplesPerChannel = data.Length / channels;
-        int currentSampleNumber = 0;
-        while (currentSampleNumber < samplesPerChannel)
-        {
-            float x = gain * amp * Mathf.Sin(phase);
-
-            // loop to update vaue for every channel for current sample number
-            int currentChannel = 0;
-            while (currentChannel < channels)
-            {
-                data[currentSampleNumber * channels + currentChannel] += x;
-                currentChannel++;
-            }
-
-            // if time for a TICK then do something !
-            if (IsTimeForNextTick(sample, currentSampleNumber)) {
-                BeatAction(samplesPerTick);
-            }
-
-            phase += amp * 0.3F;
-            amp *= 0.993F;
-            currentSampleNumber++;
-        }
+        if (IsNearlyTimeForNextTick())
+            BeatAction();
     }
 
-    private void BeatAction(double samplesPerTick)
+    private bool IsNearlyTimeForNextTick()
     {
-        beatCount++;
-        nextTickTime += samplesPerTick;
-        amp = 1.0F;
-
-        // default to no accent
-        if (beatCount > signatureHi){
-            AccentBeatAction();
-        }
-
-        print("Tick: " + beatCount + "/" + signatureHi);
-    }
-
-    private void AccentBeatAction()
-    {
-        beatCount = 1;
-        amp *= 2.0F;
-        print("-- ACCENT ---");
-    }
-
-    private bool IsTimeForNextTick(double sample, int n)
-    {
-        if ((sample + n) >= nextTickTime)
+        float lookAhead = 0.1F;
+        if ((AudioSettings.dspTime + lookAhead) >= nextTickTime)
             return true;
         else
             return false;
     }
+
+
+    private void BeatAction()
+    {
+        beatCount++;
+
+        // default to no accent
+        if (beatCount > signatureHi){
+            audioSourceTickAccent.PlayScheduled(nextTickTime);
+            beatCount = 1;
+            print("-- ACCENT ---");
+        } else {
+            audioSourceTickBasic.PlayScheduled(nextTickTime);
+        }
+
+        nextTickTime += beatDuration;
+
+        print("Tick: " + beatCount + "/" + signatureHi);
+    }
+
+
 }
