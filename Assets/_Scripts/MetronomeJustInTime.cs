@@ -3,14 +3,13 @@
 // adapted from Unity documentation sample (Nov 2017) found at:
 // https://docs.unity3d.com/ScriptReference/AudioSettings-dspTime.html
 
-public class MetronomeOld : MonoBehaviour
+public class MetronomeJustInTime : MonoBehaviour
 {
     public AudioClip clipTickBasic;
     public AudioClip clipTickAccent;
 
     public double bpm = 140.0F;
-    public int signatureHi = 4;
-    public int signatureLo = 4;
+    public int beatsPerMeasure = 4;
 
     private double nextTickTime = 0.0F;
     private int beatCount;
@@ -35,7 +34,7 @@ public class MetronomeOld : MonoBehaviour
         // 1 minute = 60 seconds / (numebr of beats per minute)
         beatDuration = 60.0F / bpm;
 
-        beatCount = signatureHi; // so about to do a beat
+        beatCount = beatsPerMeasure; // so about to do a beat
 
         double startTick = AudioSettings.dspTime;
 
@@ -69,7 +68,7 @@ public class MetronomeOld : MonoBehaviour
         beatCount++;
 
         // default to no accent
-        if (beatCount > signatureHi){
+        if (beatCount > beatsPerMeasure){
             audioSourceTickAccent.PlayScheduled(nextTickTime);
             beatCount = 1;
             print("-- ACCENT ---");
@@ -79,7 +78,7 @@ public class MetronomeOld : MonoBehaviour
 
         nextTickTime += beatDuration;
 
-        print("Tick: " + beatCount + "/" + signatureHi);
+        print("Tick: " + beatCount + "/" + beatsPerMeasure);
     }
 
 

@@ -9,8 +9,7 @@ public class Metronome : MonoBehaviour
     public AudioSource audioSourceTickAccent;
 
     public double bpm = 140.0F;
-    public int signatureHi = 4;
-    public int signatureLo = 4;
+    public int beatsPerMeasure = 4;
 
     private double nextTickTime = 0.0F;
     private int beatCount;
@@ -26,7 +25,7 @@ public class Metronome : MonoBehaviour
         // 1 minute = 60 seconds / (numebr of beats per minute)
         beatDuration = 60.0F / bpm;
 
-        beatCount = signatureHi; // so about to do a beat
+        beatCount = beatsPerMeasure; // so about to do a beat
 
         double startTick = AudioSettings.dspTime;
         nextTickTime = startTick;
@@ -41,6 +40,10 @@ public class Metronome : MonoBehaviour
             BeatAction();
     }
 
+    /// <summary>
+    /// decide if nearly time for next tick...
+    /// </summary>
+    /// <returns><c>true</c>, if nearly time for next tick, <c>false</c> otherwise.</returns>
     private bool IsNearlyTimeForNextTick()
     {
         float lookAhead = 0.1F;
@@ -51,23 +54,41 @@ public class Metronome : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// time to schedule next beat
+    /// </summary>
     private void BeatAction()
     {
+        // add 1 to number of beats
         beatCount++;
 
-        // default to no accent
-        if (beatCount > signatureHi){
-            audioSourceTickAccent.PlayScheduled(nextTickTime);
-            beatCount = 1;
-            print("-- ACCENT ---");
-        } else {
-            audioSourceTickBasic.PlayScheduled(nextTickTime);
-        }
+        // default - no accent message to display
+        string accentMessage = "";
 
+        // accented beat or not ?
+        if (beatCount > beatsPerMeasure)
+            accentMessage = AccentBeatAction();
+        else
+            // basic beat action
+            audioSourceTickBasic.PlayScheduled(nextTickTime);
+
+        // next tick in 'beatDuration' seconds
         nextTickTime += beatDuration;
 
-        print("Tick: " + beatCount + "/" + signatureHi);
+        // display beat count message in Console
+        print("Tick: " + beatCount + "/" + beatsPerMeasure + accentMessage);
     }
 
-
+    /// <summary>
+    /// schedule acented beat beat
+    /// reset beat count to 1
+    /// return message - so user can see this beat was ACCENTed
+    /// </summary>
+    /// <returns>The beat action message.</returns>
+    private string AccentBeatAction()
+    {
+        audioSourceTickAccent.PlayScheduled(nextTickTime);
+        beatCount = 1;
+        return " -- ACCENT ---";
+    }
 }
